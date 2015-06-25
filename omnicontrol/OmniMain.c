@@ -2,7 +2,7 @@
  * OmniMain.c
  *
  * Created: 1/28/2015
- * Updated: 3/20/2015
+ * Updated: 6/23/2015
  *  Author: Dan Fisher
  */ 
 
@@ -16,6 +16,10 @@
 #include <avr/interrupt.h>
 #include <stdlib.h>
 #include "DCMotor.h"
+
+// 50 RC cycles ~ 1s
+#define LASERWAIT 250	// Number of RC cycles for laser to recharge before firing
+#define LEDBARWAIT 71	// Number of RC cycles for LED bar to increment by 1 (bar goes from 1 to 8, or 7 intervals
 
 // Start of channel interval
 volatile uint16_t ch1_start = 0;
@@ -44,6 +48,7 @@ volatile int16_t ch6 = 1500;
 // Flag is set after each cycle of RC pulses
 volatile uint8_t start_flag = 0;
 
+// Function prototypes
 void Timer1Init(void);
 void shiftByteOut(uint8_t byteOut);
 
@@ -51,11 +56,21 @@ int main(void) {
 	DDRB |= (1 << PORTB1);	// Laser output pin, HIGH = laser on
 	DDRD |= (1 << PORTD0) | (1 << PORTD1) | (1 << PORTD2);	// Enable pins for shift register output
 	
+	/*
 	// Knight Rider led variables
 	uint16_t ledCount = 1;
 	uint8_t ledPosition = 0;
 	int8_t ledIncrement = -1;
-	uint8_t ledDisplay = 0b00000001;
+	uint8_t ledDisplay = 0b00000001;*/
+	
+	// Laser LED bar variables
+	uint16_t ledBarCounter = 1;
+	uint8_t ledBarIndicator = 1;
+	uint8_t ledBarCycle = 1;
+	
+	uint8_t laserState = 0;		// 1 = ON, 0 = OFF
+	uint16_t laserTimer = 0;	// 
+	uint8_t laserPower = 0;		// 0 = can't fire, 1 = can fire
 
 	DCMotorSetup();
 	Timer1Init();
@@ -145,12 +160,26 @@ int main(void) {
 			}
 			
 			// Turn laser on (Ch5 > 1500) or off (Ch5 < 1500)
-			if(ch5 > 1500) {
+			if((ch5 > 1500) && (laserState == 0) && (laserTimer == 0) && (laserPower == 1)) {
 				PORTB |= (1 << PORTB1);
-			} else {
-				PORTB &= ~(1 << PORTB1);
+				laserState = 1;
+				ledBarCounter = 1;	// Reset LED bar
+				ledBarCycle = 1;
+				ledBarIndicator = 1;
+				laserTimer = LASERWAIT;
+				laserPower = 0;
+			} else if(ch5 < 1500) {
+				PORTB &= ~(1 << PORTB1); // Turn off laser
+				laserState = 0;
 			}
 			
+			if(laserTimer > 0) {
+				laserTimer--;
+			} else {
+				PORTB &= ~(1 << PORTB1); // Turn off laser
+			}
+			
+			/*
 			// Knight Rider LEDs
 			if((ledCount % 5) == 0) {
 				shiftByteOut(ledDisplay);
@@ -162,7 +191,21 @@ int main(void) {
 				ledCount = 1;
 			} else {
 				ledCount++;
+			}*/
+			
+			// LED bar count up
+			if((ledBarCounter % LEDBARWAIT == 0) && ledBarCycle < 8) {
+				ledBarIndicator = (ledBarIndicator << 1) + 1;
+				ledBarCounter++;
+				ledBarCycle++;
+			} else if (ledBarCycle == 8) {
+				laserPower = 1;
+			} else {
+				ledBarCounter++;
 			}
+			
+			// Display LED bar
+			shiftByteOut(ledBarIndicator);
 			
 			// Check for laser hit
 			if((PINB & (1 << PORTB2)) == 0) {
@@ -175,6 +218,10 @@ int main(void) {
 					shiftByteOut(0b00000000);
 					_delay_ms(250);
 				}
+				ledBarCounter = 1;	// Reset LED bar
+				ledBarCycle = 1;
+				ledBarIndicator = 1;
+				laserPower = 0;		// Reset laser power
 			}
 			
 			start_flag = 0;		// Reset flag after speeds have updated
