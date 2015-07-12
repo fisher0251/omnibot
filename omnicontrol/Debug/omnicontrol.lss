@@ -411,7 +411,7 @@ int main(void) {
 			float sqrt3_2 = sqrt(3.0)/2.0;
 		
 			// Check for a dead stick position
-			if((abs(ch1) > 25) || (abs(ch2) > 25) || (abs(ch4) > 25)) {
+			if((abs(ch1) > 50) || (abs(ch2) > 50) || (abs(ch4) > 50)) {
  254:	80 91 0a 01 	lds	r24, 0x010A
  258:	90 91 0b 01 	lds	r25, 0x010B
  25c:	99 23       	and	r25, r25
@@ -419,7 +419,7 @@ int main(void) {
  260:	91 95       	neg	r25
  262:	81 95       	neg	r24
  264:	91 09       	sbc	r25, r1
- 266:	4a 97       	sbiw	r24, 0x1a	; 26
+ 266:	c3 97       	sbiw	r24, 0x33	; 51
  268:	bc f4       	brge	.+46     	; 0x298 <main+0x17a>
  26a:	80 91 08 01 	lds	r24, 0x0108
  26e:	90 91 09 01 	lds	r25, 0x0109
@@ -428,7 +428,7 @@ int main(void) {
  276:	91 95       	neg	r25
  278:	81 95       	neg	r24
  27a:	91 09       	sbc	r25, r1
- 27c:	4a 97       	sbiw	r24, 0x1a	; 26
+ 27c:	c3 97       	sbiw	r24, 0x33	; 51
  27e:	64 f4       	brge	.+24     	; 0x298 <main+0x17a>
  280:	80 91 04 01 	lds	r24, 0x0104
  284:	90 91 05 01 	lds	r25, 0x0105
@@ -437,7 +437,7 @@ int main(void) {
  28c:	91 95       	neg	r25
  28e:	81 95       	neg	r24
  290:	91 09       	sbc	r25, r1
- 292:	4a 97       	sbiw	r24, 0x1a	; 26
+ 292:	c3 97       	sbiw	r24, 0x33	; 51
  294:	0c f4       	brge	.+2      	; 0x298 <main+0x17a>
  296:	43 c1       	rjmp	.+646    	; 0x51e <main+0x400>
 				// Calculate raw wheel speeds and directions for translation
@@ -761,7 +761,7 @@ int main(void) {
 			float sqrt3_2 = sqrt(3.0)/2.0;
 		
 			// Check for a dead stick position
-			if((abs(ch1) > 25) || (abs(ch2) > 25) || (abs(ch4) > 25)) {
+			if((abs(ch1) > 50) || (abs(ch2) > 50) || (abs(ch4) > 50)) {
  51c:	02 c0       	rjmp	.+4      	; 0x522 <main+0x404>
 				SPEED_A = 155 + (int)(rawSpeed_A*100/500);
 				SPEED_B = 155 + (int)(rawSpeed_B*100/500);
@@ -931,8 +931,9 @@ int main(void) {
  5dc:	0e 94 75 00 	call	0xea	; 0xea <shiftByteOut>
 			
 			// Check for laser hit
-			if((PINB & (1 << PORTB2)) == 0) {
- 5e0:	1a 99       	sbic	0x03, 2	; 3
+			// For Omnibot 1 HIT = 0, for Omnibot 2 HIT = 1 != 0,
+			if((PINB & (1 << PORTB2)) != 0) {
+ 5e0:	1a 9b       	sbis	0x03, 2	; 3
  5e2:	29 c0       	rjmp	.+82     	; 0x636 <main+0x518>
 				DCMotorStop();				// Turn off motors
  5e4:	0e 94 53 00 	call	0xa6	; 0xa6 <DCMotorStop>
@@ -975,8 +976,8 @@ int main(void) {
  61c:	00 00       	nop
  61e:	01 50       	subi	r16, 0x01	; 1
  620:	11 09       	sbc	r17, r1
-			// Check for laser hit
-			if((PINB & (1 << PORTB2)) == 0) {
+			// For Omnibot 1 HIT = 0, for Omnibot 2 HIT = 1 != 0,
+			if((PINB & (1 << PORTB2)) != 0) {
 				DCMotorStop();				// Turn off motors
 				PORTB &= ~(1 << PORTB1);	// Turn off laser
 				// Lock up and flash LEDs

@@ -109,7 +109,7 @@ int main(void) {
 			float sqrt3_2 = sqrt(3.0)/2.0;
 		
 			// Check for a dead stick position
-			if((abs(ch1) > 25) || (abs(ch2) > 25) || (abs(ch4) > 25)) {
+			if((abs(ch1) > 50) || (abs(ch2) > 50) || (abs(ch4) > 50)) {
 				// Calculate raw wheel speeds and directions for translation
 				float rawSpeed_A = -ch1;
 				float rawSpeed_B = 0.5*ch1 + sqrt3_2*ch2;
@@ -208,7 +208,8 @@ int main(void) {
 			shiftByteOut(ledBarIndicator);
 			
 			// Check for laser hit
-			if((PINB & (1 << PORTB2)) == 0) {
+			// For Omnibot 1 HIT = 0, for Omnibot 2 HIT = 1 != 0,
+			if((PINB & (1 << PORTB2)) != 0) {
 				DCMotorStop();				// Turn off motors
 				PORTB &= ~(1 << PORTB1);	// Turn off laser
 				// Lock up and flash LEDs
